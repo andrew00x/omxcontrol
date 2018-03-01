@@ -10,6 +10,12 @@ import (
 	"strconv"
 )
 
+const (
+	playerInterface = "org.mpris.MediaPlayer2.Player"
+	propertyGetter  = "org.freedesktop.DBus.Properties.Get"
+	propertySetter  = "org.freedesktop.DBus.Properties.Set"
+)
+
 type OmxCtrl struct {
 	conn      *dbus.Conn
 	omxPlayer dbus.BusObject
@@ -22,61 +28,6 @@ type Stream struct {
 	Codec    string
 	Active   bool
 }
-
-type Status int
-
-const (
-	Unknown Status = iota
-	Playing
-	Paused
-)
-
-var statusValues = [...]string{"Unknown", "Playing", "Paused"}
-
-func (s Status) String() string {
-	return statusValues[s]
-}
-
-type KeyboardAction int
-
-const (
-	ActionDecreaseSpeed         KeyboardAction = iota + 1
-	ActionIncreaseSpeed
-	ActionRewind
-	ActionFastForward
-	ActionShowInfo
-	ActionPreviousAudio
-	ActionNextAudio
-	ActionPreviousChapter
-	ActionNextChapter
-	ActionPreviousSubtitle
-	ActionNextSubtitle
-	ActionToggleSubtitle
-	ActionDecreaseSubtitleDelay
-	ActionIncreaseSubtitleDelay
-	ActionExit
-	ActionPlayPause
-	ActionDecreaseVolume
-	ActionIncreaseVolume
-	ActionSeekBackSmall
-	ActionSeekForwardSmall
-	ActionSeekBackLarge
-	ActionSeekForwardLarge
-	ActionStep
-	ActionBlank
-	ActionSeekRelative
-	ActionSeekAbsolute
-	ActionMoveVideo
-	ActionHideVideo
-	ActionUnhideVideo
-	ActionHideSubtitles
-	ActionShowSubtitles
-	ActionSetAlpha
-	ActionSetAspectMode
-	ActionCropVideo
-	ActionPause
-	ActionPlay
-)
 
 func Create() (*OmxCtrl, error) {
 	user := os.Getenv("USER")
@@ -100,12 +51,12 @@ func Create() (*OmxCtrl, error) {
 }
 
 func (ctrl *OmxCtrl) Action(action KeyboardAction) error {
-	return ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.Action", 0, action).Err
+	return ctrl.omxPlayer.Call(methodFullName("Action"), 0, action).Err
 }
 
 func (ctrl *OmxCtrl) AudioTracks() (audios []Stream, err error) {
 	var raw []string
-	err = ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.ListAudio", 0).Store(&raw)
+	err = ctrl.omxPlayer.Call(methodFullName("ListAudio"), 0).Store(&raw)
 	if err == nil {
 		audios = make([]Stream, 0, len(raw))
 		for _, s := range raw {
@@ -120,21 +71,21 @@ func (ctrl *OmxCtrl) Close() error {
 }
 
 func (ctrl *OmxCtrl) Duration() (duration int64, err error) {
-	err = ctrl.omxPlayer.Call("org.freedesktop.DBus.Properties.Get", 0, "org.mpris.MediaPlayer2.Player", "Duration").Store(&duration)
+	err = ctrl.omxPlayer.Call(propertyGetter, 0, playerInterface, "Duration").Store(&duration)
 	return
 }
 
 func (ctrl *OmxCtrl) HideSubtitles() error {
-	return ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.HideSubtitles", 0).Err
+	return ctrl.omxPlayer.Call(methodFullName("HideSubtitles"), 0).Err
 }
 
 func (ctrl *OmxCtrl) Mute() error {
-	return ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.Mute", 0).Err
+	return ctrl.omxPlayer.Call(methodFullName("Mute"), 0).Err
 }
 
 func (ctrl *OmxCtrl) PlaybackStatus() (status Status, err error) {
 	var r string
-	err = ctrl.omxPlayer.Call("org.freedesktop.DBus.Properties.Get", 0, "org.mpris.MediaPlayer2.Player", "PlaybackStatus").Store(&r)
+	err = ctrl.omxPlayer.Call(propertyGetter, 0, playerInterface, "PlaybackStatus").Store(&r)
 	if err == nil {
 		switch r {
 		case "Playing":
@@ -149,22 +100,22 @@ func (ctrl *OmxCtrl) PlaybackStatus() (status Status, err error) {
 }
 
 func (ctrl *OmxCtrl) Playing() (playing string, err error) {
-	err = ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.GetSource", 0).Store(&playing)
+	err = ctrl.omxPlayer.Call(methodFullName("GetSource"), 0).Store(&playing)
 	return
 }
 
 func (ctrl *OmxCtrl) PlayPause() error {
-	return ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.PlayPause", 0).Err
+	return ctrl.omxPlayer.Call(methodFullName("PlayPause"), 0).Err
 }
 
 func (ctrl *OmxCtrl) Position() (pos int64, err error) {
-	err = ctrl.omxPlayer.Call("org.freedesktop.DBus.Properties.Get", 0, "org.mpris.MediaPlayer2.Player", "Position").Store(&pos)
+	err = ctrl.omxPlayer.Call(propertyGetter, 0, playerInterface, "Position").Store(&pos)
 	return
 }
 
 func (ctrl *OmxCtrl) Seek(offset int64) (err error) {
 	var res int64
-	err = ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.Seek", 0, offset).Store(&res)
+	err = ctrl.omxPlayer.Call(methodFullName("Seek"), 0, offset).Store(&res)
 	if err == nil {
 		if res == 0 {
 			err = errors.New(fmt.Sprintf("invalid seek offset: %d", offset))
@@ -174,18 +125,18 @@ func (ctrl *OmxCtrl) Seek(offset int64) (err error) {
 }
 
 func (ctrl *OmxCtrl) SelectAudio(index int) (res bool, err error) {
-	err = ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.SelectAudio", 0, index).Store(&res)
+	err = ctrl.omxPlayer.Call(methodFullName("SelectAudio"), 0, index).Store(&res)
 	return
 }
 
 func (ctrl *OmxCtrl) SelectSubtitle(index int) (res bool, err error) {
-	err = ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.SelectSubtitle", 0, index).Store(&res)
+	err = ctrl.omxPlayer.Call(methodFullName("SelectSubtitle"), 0, index).Store(&res)
 	return
 }
 
 func (ctrl *OmxCtrl) SetPosition(offset int64) (err error) {
 	var res int64
-	err = ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.SetPosition", 0, dbus.ObjectPath("/"), offset).Store(&res)
+	err = ctrl.omxPlayer.Call(methodFullName("SetPosition"), 0, dbus.ObjectPath("/"), offset).Store(&res)
 	if err == nil {
 		if res == 0 {
 			err = errors.New(fmt.Sprintf("invalid possition: %d", offset))
@@ -195,21 +146,21 @@ func (ctrl *OmxCtrl) SetPosition(offset int64) (err error) {
 }
 
 func (ctrl *OmxCtrl) ShowSubtitles() error {
-	return ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.ShowSubtitles", 0).Err
+	return ctrl.omxPlayer.Call(methodFullName("ShowSubtitles"), 0).Err
 }
 
 func (ctrl *OmxCtrl) SetVolume(vol float64) (res float64, err error) {
-	err = ctrl.omxPlayer.Call("org.freedesktop.DBus.Properties.Set", 0, "org.mpris.MediaPlayer2.Player", "Volume", vol).Store(&res)
+	err = ctrl.omxPlayer.Call(propertySetter, 0, playerInterface, "Volume", vol).Store(&res)
 	return
 }
 
 func (ctrl *OmxCtrl) Stop() error {
-	return ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.Stop", 0).Err
+	return ctrl.omxPlayer.Call(methodFullName("Stop"), 0).Err
 }
 
 func (ctrl *OmxCtrl) Subtitles() (subtitles []Stream, err error) {
 	var raw []string
-	err = ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.ListSubtitles", 0).Store(&raw)
+	err = ctrl.omxPlayer.Call(methodFullName("ListSubtitles"), 0).Store(&raw)
 	if err == nil {
 		subtitles = make([]Stream, 0, len(raw))
 		for _, s := range raw {
@@ -220,12 +171,16 @@ func (ctrl *OmxCtrl) Subtitles() (subtitles []Stream, err error) {
 }
 
 func (ctrl *OmxCtrl) Unmute() error {
-	return ctrl.omxPlayer.Call("org.mpris.MediaPlayer2.Player.Unmute", 0).Err
+	return ctrl.omxPlayer.Call(methodFullName("Unmute"), 0).Err
 }
 
 func (ctrl *OmxCtrl) Volume() (vol float64, err error) {
-	err = ctrl.omxPlayer.Call("org.freedesktop.DBus.Properties.Get", 0, "org.mpris.MediaPlayer2.Player", "Volume").Store(&vol)
+	err = ctrl.omxPlayer.Call(propertyGetter, 0, playerInterface, "Volume").Store(&vol)
 	return
+}
+
+func methodFullName(shortName string) string {
+	return fmt.Sprintf("%s.%s", playerInterface, shortName)
 }
 
 func parseStreamInfo(s string) Stream {
