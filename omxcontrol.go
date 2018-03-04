@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"strconv"
+	"time"
 )
 
 const (
@@ -70,8 +71,12 @@ func (ctrl *OmxCtrl) Close() error {
 	return ctrl.conn.Close()
 }
 
-func (ctrl *OmxCtrl) Duration() (duration int64, err error) {
-	err = ctrl.omxPlayer.Call(propertyGetter, 0, playerInterface, "Duration").Store(&duration)
+func (ctrl *OmxCtrl) Duration() (duration time.Duration, err error) {
+	var v int64
+	err = ctrl.omxPlayer.Call(propertyGetter, 0, playerInterface, "Duration").Store(&v)
+	if err == nil {
+		duration = time.Duration(v) * time.Microsecond
+	}
 	return
 }
 
@@ -108,14 +113,18 @@ func (ctrl *OmxCtrl) PlayPause() error {
 	return ctrl.omxPlayer.Call(methodFullName("PlayPause"), 0).Err
 }
 
-func (ctrl *OmxCtrl) Position() (pos int64, err error) {
-	err = ctrl.omxPlayer.Call(propertyGetter, 0, playerInterface, "Position").Store(&pos)
+func (ctrl *OmxCtrl) Position() (pos time.Duration, err error) {
+	var v int64
+	err = ctrl.omxPlayer.Call(propertyGetter, 0, playerInterface, "Position").Store(&v)
+	if err == nil {
+		pos = time.Duration(v) * time.Microsecond
+	}
 	return
 }
 
-func (ctrl *OmxCtrl) Seek(offset int64) (err error) {
+func (ctrl *OmxCtrl) Seek(offset time.Duration) (err error) {
 	var res int64
-	err = ctrl.omxPlayer.Call(methodFullName("Seek"), 0, offset).Store(&res)
+	err = ctrl.omxPlayer.Call(methodFullName("Seek"), 0, int64(offset/time.Microsecond)).Store(&res)
 	if err == nil {
 		if res == 0 {
 			err = errors.New(fmt.Sprintf("invalid seek offset: %d", offset))
@@ -134,9 +143,9 @@ func (ctrl *OmxCtrl) SelectSubtitle(index int) (res bool, err error) {
 	return
 }
 
-func (ctrl *OmxCtrl) SetPosition(offset int64) (err error) {
+func (ctrl *OmxCtrl) SetPosition(offset time.Duration) (err error) {
 	var res int64
-	err = ctrl.omxPlayer.Call(methodFullName("SetPosition"), 0, dbus.ObjectPath("/"), offset).Store(&res)
+	err = ctrl.omxPlayer.Call(methodFullName("SetPosition"), 0, dbus.ObjectPath("/"), int64(offset/time.Microsecond)).Store(&res)
 	if err == nil {
 		if res == 0 {
 			err = errors.New(fmt.Sprintf("invalid possition: %d", offset))
