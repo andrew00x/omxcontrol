@@ -67,6 +67,11 @@ func (ctrl *OmxCtrl) AudioTracks() (audios []Stream, err error) {
 	return
 }
 
+func (ctrl *OmxCtrl) CanControl() (res bool, err error) {
+	err = ctrl.omxPlayer.Call(propertyGetter, 0, playerInterface, "CanControl").Store(&res)
+	return
+}
+
 func (ctrl *OmxCtrl) Close() error {
 	return ctrl.conn.Close()
 }
@@ -147,7 +152,7 @@ func (ctrl *OmxCtrl) SetPosition(offset time.Duration) (err error) {
 	var res int64
 	err = ctrl.omxPlayer.Call(methodFullName("SetPosition"), 0, dbus.ObjectPath("/"), int64(offset/time.Microsecond)).Store(&res)
 	if err == nil {
-		if res == 0 {
+		if offset != 0 && res == 0 {
 			err = errors.New(fmt.Sprintf("invalid possition: %d", offset))
 		}
 	}
