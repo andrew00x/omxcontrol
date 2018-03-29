@@ -114,6 +114,14 @@ func (ctrl *OmxCtrl) Playing() (playing string, err error) {
 	return
 }
 
+func (ctrl *OmxCtrl) Pause() error {
+	return ctrl.omxPlayer.Call(methodFullName("Pause"), 0).Err
+}
+
+func (ctrl *OmxCtrl) Play() error {
+	return ctrl.omxPlayer.Call(methodFullName("Play"), 0).Err
+}
+
 func (ctrl *OmxCtrl) PlayPause() error {
 	return ctrl.omxPlayer.Call(methodFullName("PlayPause"), 0).Err
 }
