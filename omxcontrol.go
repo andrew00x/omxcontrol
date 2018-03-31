@@ -156,12 +156,12 @@ func (ctrl *OmxCtrl) SelectSubtitle(index int) (res bool, err error) {
 	return
 }
 
-func (ctrl *OmxCtrl) SetPosition(offset time.Duration) (err error) {
+func (ctrl *OmxCtrl) SetPosition(position time.Duration) (err error) {
 	var res int64
-	err = ctrl.omxPlayer.Call(methodFullName("SetPosition"), 0, dbus.ObjectPath("/"), int64(offset/time.Microsecond)).Store(&res)
+	err = ctrl.omxPlayer.Call(methodFullName("SetPosition"), 0, dbus.ObjectPath("/"), int64(position/time.Microsecond)).Store(&res)
 	if err == nil {
-		if offset != 0 && res == 0 {
-			err = errors.New(fmt.Sprintf("invalid possition: %d", offset))
+		if position != 0 && res == 0 {
+			err = errors.New(fmt.Sprintf("invalid possition: %d", position))
 		}
 	}
 	return
