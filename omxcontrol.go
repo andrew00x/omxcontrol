@@ -6,8 +6,8 @@ import (
 	"github.com/godbus/dbus"
 	"io/ioutil"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -23,11 +23,11 @@ type OmxCtrl struct {
 }
 
 type Stream struct {
-	Index    int    `json:"index"`
-	Language string `json:"lang"`
-	Name     string `json:"name"`
-	Codec    string `json:"codec"`
-	Active   bool   `json:"active"`
+	Index    int
+	Language string
+	Name     string
+	Codec    string
+	Active   bool
 }
 
 func Create() (*OmxCtrl, error) {
